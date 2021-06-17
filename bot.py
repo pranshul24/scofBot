@@ -42,7 +42,7 @@ async def toss(ctx, *args):
     for i in range(tot):
         outp.append(i)
     response = random.choice(outp)
-    embedVar = discord.Embed(title="Result", description=response, color=0x00ff00)
+    embedVar = discord.Embed(title="Result", description=response, color=0x00c09a)
     await ctx.channel.send(embed=embedVar)
 
 
@@ -78,12 +78,13 @@ async def delete_alarm(ctx, *args):
     for i in range(k):
         if(alarms[k-1-i][0].is_alive() == 0):
             del alarms[k-1-i]
-    response = "Alarms :\n"
+    response = ""
     for i in range(len(alarms)):
         format = '%I:%M %p'
         alTime = alarms[i][1].strftime(format)
-        response += str(i+1)+". Alarm set for "+str(alTime)+"\n"
-    await ctx.send(response)
+        response += "**"+str(i+1)+".** Alarm set for "+str(alTime)+"\n"
+    embedVar = discord.Embed(title="Alarms :", description=response, color=0x3498DB)
+    await ctx.channel.send(embed=embedVar)
 
 
 @bot.command(name='disp', help='Show all alarms')
@@ -180,7 +181,8 @@ async def set_alarm(ctx, *args):
         response = "Alarm set for time "+str(hour)+":"+str(minutes)+" "+args[2][0:1]+"m"
     if flag == 1 and after != -1:
         response = "Timer set for " + str(minutes) + " minutes"
-    await ctx.send(response)
+    embedVar = discord.Embed(description=response, color=0xE91E63)
+    await ctx.channel.send(embed=embedVar)
     await display_alarms(ctx)
 
 bot.run(TOKEN)
