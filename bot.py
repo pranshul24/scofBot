@@ -20,6 +20,8 @@ account_sid = os.getenv('account_sid')
 auth_token = os.getenv('auth_token')
 to_contact = os.getenv('to_contact')
 twilio_contact = os.getenv('twilio_contact')
+to_contact2 = os.getenv('to_contact2')
+tem_contact = to_contact
 alarms = []
 client = Client(account_sid, auth_token)
 
@@ -38,7 +40,7 @@ async def toss(ctx, *args):
     await ctx.send(response)
 
 
-def alarm_func(arg):
+def alarm_func(arg, cont):
     t = threading.currentThread()
     for i in range(arg):
         if(t.is_running == 1):
@@ -49,7 +51,7 @@ def alarm_func(arg):
     call = client.calls.create(
         url='http://demo.twilio.com/docs/voice.xml',
         from_=twilio_contact,
-        to=to_contact
+        to=cont
     )
     # print(call.sid)
 
@@ -57,13 +59,12 @@ def alarm_func(arg):
 class AlarmThread(threading.Thread):
     def __init__(self,  *args, **kwargs):
         super(AlarmThread, self).__init__(*args, **kwargs)
-        # self._stop_event = threading.Event()
         self.is_running = 1
 
 
 @bot.command(name='del', help='Delete alarm')
 async def delete_alarm(ctx, *args):
-    if(len(args) == 1 and int(args[0]) <= len(alarms)):
+    if(len(args) == 1 and int(args[0]) <= len(alarms) and int(args[0]) > 0):
         alarms[int(args[0])-1][0].is_running = 0
         del alarms[int(args[0])-1]
 
@@ -104,7 +105,8 @@ async def set_alarm(ctx, *args):
     after = -1
     timeConv = -1  # 0 for am , 1 for pm
     flag = 0
-    if(len(args) == 3):
+    toPerson = 1
+    if(len(args) == 3 or len(args) == 4):
         for i in range(len(args)):
             if(i == 0):
                 hour = int(args[i])
@@ -115,15 +117,26 @@ async def set_alarm(ctx, *args):
                     timeConv = 0
                 elif(args[i] == "p" or args[i] == "pm"):
                     timeConv = 1
+            if(i == 3):
+                toPerson = int(args[i])
     elif(len(args) == 1):
         after = 1
         minutes = int(args[0])
+    elif(len(args) == 2):
+        after = 1
+        minutes = int(args[0])
+        toPerson = int(args[1])
     else:
         flag = 1
 
+    if(toPerson == 1):
+        tem_contact = to_contact
+    elif(toPerson == 2):
+        tem_contact = to_contact2
+
     if after == 1:
         # set after minutes alarm
-        thread = AlarmThread(target=alarm_func, args=(60*minutes, ))
+        thread = AlarmThread(target=alarm_func, args=(60*minutes, tem_contact, ))
         now = datetime.datetime.now()
         later = now + datetime.timedelta(minutes=minutes)
         thread.start()
@@ -147,7 +160,7 @@ async def set_alarm(ctx, *args):
             totMinutes = (hour-curhr)*60+minutes-curmin
         else:
             totMinutes = 24*60-((curhr-hour)*60+curmin-minutes)
-        thread = AlarmThread(target=alarm_func, args=(60*totMinutes, ))
+        thread = AlarmThread(target=alarm_func, args=(60*totMinutes, tem_contact, ))
         now = datetime.datetime.now()
         later = now + datetime.timedelta(minutes=totMinutes)
         thread.start()
