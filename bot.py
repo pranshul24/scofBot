@@ -39,14 +39,44 @@ async def toss(ctx, *args):
 
 
 def alarm_func(arg):
+    t = threading.currentThread()
     for i in range(arg):
-        sleep(1)
+        if(t.is_running == 1):
+            sleep(1)
+        else:
+            # print("yp")
+            return
     call = client.calls.create(
         url='http://demo.twilio.com/docs/voice.xml',
         from_=twilio_contact,
         to=to_contact
     )
     # print(call.sid)
+
+
+class AlarmThread(threading.Thread):
+    def __init__(self,  *args, **kwargs):
+        super(AlarmThread, self).__init__(*args, **kwargs)
+        # self._stop_event = threading.Event()
+        self.is_running = 1
+
+
+@bot.command(name='del', help='Delete alarm')
+async def delete_alarm(ctx, *args):
+    if(len(args) == 1 and int(args[0]) <= len(alarms)):
+        alarms[int(args[0])-1][0].is_running = 0
+        del alarms[int(args[0])-1]
+
+    k = len(alarms)
+    for i in range(k):
+        if(alarms[k-1-i][0].is_alive() == 0):
+            del alarms[k-1-i]
+    response = "Alarms :\n"
+    for i in range(len(alarms)):
+        format = '%I:%M %p'
+        alTime = alarms[i][1].strftime(format)
+        response += str(i+1)+". Alarm set for "+str(alTime)+"\n"
+    await ctx.send(response)
 
 
 @bot.command(name='disp', help='Show all alarms')
@@ -93,7 +123,7 @@ async def set_alarm(ctx, *args):
 
     if after == 1:
         # set after minutes alarm
-        thread = Thread(target=alarm_func, args=(60*minutes, ))
+        thread = AlarmThread(target=alarm_func, args=(60*minutes, ))
         now = datetime.datetime.now()
         later = now + datetime.timedelta(minutes=minutes)
         thread.start()
@@ -117,7 +147,7 @@ async def set_alarm(ctx, *args):
             totMinutes = (hour-curhr)*60+minutes-curmin
         else:
             totMinutes = 24*60-((curhr-hour)*60+curmin-minutes)
-        thread = Thread(target=alarm_func, args=(60*totMinutes, ))
+        thread = AlarmThread(target=alarm_func, args=(60*totMinutes, ))
         now = datetime.datetime.now()
         later = now + datetime.timedelta(minutes=totMinutes)
         thread.start()
