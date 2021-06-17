@@ -6,7 +6,7 @@ import threading
 import datetime
 import os
 import random
-
+import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
 
@@ -24,6 +24,11 @@ to_contact2 = os.getenv('to_contact2')
 tem_contact = to_contact
 alarms = []
 client = Client(account_sid, auth_token)
+
+
+@bot.event
+async def on_ready():
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="with Alarms"))
 
 
 @bot.command(name='toss', help='gives random number in the range (default range = 2)')
