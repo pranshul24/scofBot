@@ -3,7 +3,7 @@ from twilio.rest import Client
 from threading import Thread
 from time import sleep
 import threading
-from datetime import datetime
+import datetime
 import os
 import random
 
@@ -46,11 +46,29 @@ def alarm_func(arg):
         from_=twilio_contact,
         to=to_contact
     )
-    print(call.sid)
+    # print(call.sid)
+
+
+@bot.command(name='disp', help='Show all alarms')
+async def display_alarms(ctx):
+    k = len(alarms)
+    for i in range(k):
+        if(alarms[k-1-i][0].is_alive() == 0):
+            del alarms[k-1-i]
+    response = "Alarms :\n"
+    for i in range(len(alarms)):
+        format = '%I:%M %p'
+        alTime = alarms[i][1].strftime(format)
+        response += str(i+1)+". Alarm set for "+str(alTime)+"\n"
+    await ctx.send(response)
 
 
 @bot.command(name='al', help='Set alarm')
-async def create_call(ctx, *args):
+async def set_alarm(ctx, *args):
+    k = len(alarms)
+    for i in range(k):
+        if(alarms[k-1-i][0].is_alive() == 0):
+            del alarms[k-1-i]
     hour = -1
     minutes = -1
     after = -1
@@ -76,8 +94,10 @@ async def create_call(ctx, *args):
     if after == 1:
         # set after minutes alarm
         thread = Thread(target=alarm_func, args=(60*minutes, ))
+        now = datetime.datetime.now()
+        later = now + datetime.timedelta(minutes=minutes)
         thread.start()
-        print("hi")
+        alarms.append((thread, later))
         flag = 1
     elif hour == -1 or minutes == -1 or timeConv == -1:
         flag = 1
@@ -90,7 +110,7 @@ async def create_call(ctx, *args):
             if hour != 12:
                 hour += 12
         totMinutes = 1
-        now = datetime.now()
+        now = datetime.datetime.now()
         curhr = now.hour
         curmin = now.minute
         if(curhr < hour or (curhr == hour and curmin < minutes)):
@@ -98,14 +118,18 @@ async def create_call(ctx, *args):
         else:
             totMinutes = 24*60-((curhr-hour)*60+curmin-minutes)
         thread = Thread(target=alarm_func, args=(60*totMinutes, ))
+        now = datetime.datetime.now()
+        later = now + datetime.timedelta(minutes=totMinutes)
         thread.start()
+        alarms.append((thread, later))
         flag = 0
 
     response = "Could not set alarm"
     if flag == 0:
         response = "Alarm set for time "+str(hour)+":"+str(minutes)+" "+args[2][0:1]+"m"
     if flag == 1 and after != -1:
-        response = "Alarm set for " + str(minutes) + " minutes"
+        response = "Timer set for " + str(minutes) + " minutes"
     await ctx.send(response)
+    await display_alarms(ctx)
 
 bot.run(TOKEN)
