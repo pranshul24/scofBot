@@ -92,12 +92,14 @@ async def display_alarms(ctx):
     for i in range(k):
         if(alarms[k-1-i][0].is_alive() == 0):
             del alarms[k-1-i]
-    response = "Alarms :\n"
+    response = ""
     for i in range(len(alarms)):
         format = '%I:%M %p'
         alTime = alarms[i][1].strftime(format)
-        response += str(i+1)+". Alarm set for "+str(alTime)+"\n"
-    await ctx.send(response)
+        response += "**"+str(i+1)+".** Alarm set for "+str(alTime)+"\n"
+    embedVar = discord.Embed(title="Alarms :", description=response, color=0x00ff00)
+    await ctx.channel.send(embed=embedVar)
+    # await ctx.send(response)
 
 
 @bot.command(name='al', help='Set alarm')
