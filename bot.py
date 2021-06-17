@@ -42,7 +42,8 @@ async def toss(ctx, *args):
     for i in range(tot):
         outp.append(i)
     response = random.choice(outp)
-    await ctx.send(response)
+    embedVar = discord.Embed(title="Result", description=response, color=0x00ff00)
+    await ctx.channel.send(embed=embedVar)
 
 
 def alarm_func(arg, cont):
