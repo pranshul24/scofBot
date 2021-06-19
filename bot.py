@@ -9,6 +9,17 @@ import random
 import discord
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
+import requests
+import sys
+from urllib.request import urlopen
+from bs4 import BeautifulSoup
+import ssl
+
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
+
+liveScoresUrl = "http://static.cricinfo.com/rss/livescores.xml"
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -190,5 +201,21 @@ async def set_alarm(ctx, *args):
     embedVar = discord.Embed(description=response, color=0xE91E63)
     await ctx.channel.send(embed=embedVar)
     await display_alarms(ctx)
+
+
+@bot.command(name='live', help='Shows all live matches')
+async def live_matches(ctx):
+    response = ""
+    url = liveScoresUrl
+    html = urlopen(url, context=ctx).read()
+    soup = BeautifulSoup(html, "html.parser")
+    response = ""
+    tags = soup('item')
+    i = 1
+    for tag in tags:
+        response += "**"+str(i)+".** "+tag.contents[1].contents[0]+"\n\n"
+        i += 1
+    embedVar = discord.Embed(title="Live Matches :", description=response, color=0x00ff00)
+    await ctx.channel.send(embed=embedVar)
 
 bot.run(TOKEN)
