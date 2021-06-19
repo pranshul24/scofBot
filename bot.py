@@ -78,6 +78,12 @@ async def delete_alarm(ctx, *args):
     for i in range(k):
         if(alarms[k-1-i][0].is_alive() == 0):
             del alarms[k-1-i]
+
+    if(len(args) == 0):
+        for alarm in alarms:
+            alarm[0].is_running = 0
+        alarms.clear()
+
     response = ""
     for i in range(len(alarms)):
         format = '%I:%M %p'
