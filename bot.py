@@ -319,10 +319,13 @@ async def commentary(ctx, *args):
             if(ball["dismissal"] != ""):
                 val += "> Dismissal: "+ball["dismissal"]+"\n"
             if(("pre_text" in ball) and ball["pre_text"] != ""):
-                val += "> **"+ball["pre_text"].split("\n")[1]+"**\n"
-            val += "> "+ball["text"]+"\n"
+                actualText = BeautifulSoup(ball["pre_text"], "lxml").text
+                val += "> **"+actualText.replace('\n', ' ')+"**\n"
+            if(ball["text"] != ""):
+                val += "> "+ball["text"]+"\n"
             if(("post_text" in ball) and ball["post_text"] != ""):
-                val += "> **"+ball["post_text"].split("\n")[1]+"**\n"
+                actualText = BeautifulSoup(ball["post_text"], "lxml").text
+                val += "> **"+actualText.replace('\n', ' ')+"**\n"
             embedVar.add_field(name=title, value=val, inline=False)
     await ctx.channel.send(embed=embedVar)
 
