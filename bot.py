@@ -245,24 +245,41 @@ async def live_matches(ctx, *args):
     if(matchId != -1):
         curMatch = Match(matchId)
         response = curMatch.description
-    embedVar = discord.Embed(title=response, color=0x00ff00)
+    colors = [0xf8c300, 0xfd0061, 0xa652bb, 0x00ff00]
+    embedVar = discord.Embed(title=response, color=random.choice(colors))
     embedVar.add_field(name='Result', value=curMatch.result, inline=False)
     embedVar.add_field(name='Summary', value=curMatch.current_summary, inline=False)
+    teams = []
+    team1 = curMatch.team_1
+    team2 = curMatch.team_2
+    teams.append((team1["team_id"], team1["team_abbreviation"]))
+    teams.append((team2["team_id"], team2["team_abbreviation"]))
+    innings = curMatch.innings
+    for inning in innings:
+        for team in teams:
+            if(int(team[0]) == inning["batting_team_id"]):
+                title = team[1]+" ("+str(inning["innings_numth"])+" innings)"
+                if(inning["live_current"] == 1):
+                    title += " : current"
+                val = "> Runs: "+str(inning["runs"])+"\n> Wickets: "+str(inning["wickets"])+"\n> Overs: "+str(inning["overs"])
+                embedVar.add_field(name=title, value=val, inline=True)
+                break
+
     batScoreCard = curMatch.latest_batting
     batSc = ""
     for batsmen in batScoreCard:
-        batSc += batsmen["known_as"]
+        batSc += "> " + batsmen["known_as"]
         if(batsmen["notout"] == 1):
             batSc += "*"
-        batSc += "     "
+        batSc += " : "
         batSc += str(batsmen["runs"])+"("+str(batsmen["balls_faced"])+")\n"
     embedVar.add_field(name='Batting Scorecard [N R(B)]', value=batSc, inline=False)
     bowlScoreCard = curMatch.latest_bowling
     bowlSc = ""
     for bowler in bowlScoreCard:
-        bowlSc += bowler["known_as"]
-        bowlSc += "     "
-        bowlSc += str(bowler["conceded"])+" runs    "+str(bowler["overs"])+" overs    "+str(bowler["wickets"])+" wickets\n"
+        bowlSc += "> " + bowler["known_as"]
+        bowlSc += " : "
+        bowlSc += str(bowler["conceded"])+" runs, "+str(bowler["overs"])+" overs, "+str(bowler["wickets"])+" wickets\n"
     embedVar.add_field(name='Bowling Scorecard [N R O W]', value=bowlSc, inline=False)
     await ctx.channel.send(embed=embedVar)
 
