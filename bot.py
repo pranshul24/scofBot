@@ -74,6 +74,32 @@ def alarm_func(arg, cont):
     # print(call.sid)
 
 
+class MatchThread(threading.Thread):
+    def __init__(self,  *args, **kwargs):
+        super(MatchThread, self).__init__(*args, **kwargs)
+        self.is_running = 1
+
+
+def match_func(ctx, matchNum, matchId, milestone, overs, lastWicket):
+    t = threading.currentThread()
+    cnt = 0
+    while(1):
+        if(t.is_running == 1):
+            if(cnt < 60):
+                sleep(1)
+            else:
+                # check match
+                curMatch = Match(matchId)
+                innings = curMatch.innings
+                if(milestone == 'w' and (wickets in innings) and innings["wickets"] != lastWicket):
+                    scorecard(ctx, matchNum)
+                    commentary(ctx)
+                    lastWicket = innings["wickets"]
+                cnt = 0
+        else:
+            return
+
+
 class AlarmThread(threading.Thread):
     def __init__(self,  *args, **kwargs):
         super(AlarmThread, self).__init__(*args, **kwargs)
@@ -336,5 +362,38 @@ async def commentary(ctx, *args):
                 val = val[:1018]+"...**"
             embedVar.add_field(name=title, value=val, inline=False)
     await ctx.channel.send(embed=embedVar)
+
+
+@bot.command(name='wm', help='Watch a match')
+async def commentary(ctx, *args):
+    idx = 0
+    overNum = 0
+
+    if(len(args) == 2):  # wickets
+        idx = int(args[0])
+    if(len(args) == 3):  # overs
+        overNum = int(args[1])
+    response = ""
+    url = liveScoresUrl
+    html = urlopen(url, context=ctx).read()
+    soup = BeautifulSoup(html, "html.parser")
+    response = "No such match"
+    tags = soup('item')
+    i = 1
+    matchId = -1
+    for tag in tags:
+        if(i == idx):
+            lnk = tag.contents[7].contents[0]
+            lnk = lnk.split("/")
+            matchId = lnk[-1].split(".")[0]
+            break
+        i += 1
+    desc = ""
+    curMatch = ""
+    if(matchId != -1):
+        curMatch = Match(matchId)
+        response = curMatch.description
+    colors = [0xf8c300, 0xfd0061, 0xa652bb, 0x00ff00]
+
 
 bot.run(TOKEN)
