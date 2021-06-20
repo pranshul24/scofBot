@@ -287,8 +287,11 @@ async def scorecard(ctx, *args):
 @bot.command(name='com', help='Shows commentary (last over) for the match ')
 async def commentary(ctx, *args):
     idx = 0
-    if(len(args) == 1):
+    overNum = 0
+    if(len(args) >= 1):
         idx = int(args[0])
+    if(len(args) == 2):
+        overNum = int(args[1])
     response = ""
     url = liveScoresUrl
     html = urlopen(url, context=ctx).read()
@@ -310,7 +313,7 @@ async def commentary(ctx, *args):
         curMatch = Match(matchId)
         response = curMatch.description
     colors = [0xf8c300, 0xfd0061, 0xa652bb, 0x00ff00]
-    lastOver = curMatch.json['comms'][0]["ball"]
+    lastOver = curMatch.json['comms'][overNum]["ball"]
     embedVar = discord.Embed(title=response, color=random.choice(colors))
     for ball in lastOver:
         if("overs_actual" in ball):
