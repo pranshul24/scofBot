@@ -313,8 +313,11 @@ async def commentary(ctx, *args):
         curMatch = Match(matchId)
         response = curMatch.description
     colors = [0xf8c300, 0xfd0061, 0xa652bb, 0x00ff00]
+    if(overNum >= len(curMatch.json['comms'])):
+        overNum = 0
+        desc = "**Commentary not available for specified over ! Instead showing latest over ...**"
     lastOver = curMatch.json['comms'][overNum]["ball"]
-    embedVar = discord.Embed(title=response, color=random.choice(colors))
+    embedVar = discord.Embed(title=response, description=desc, color=random.choice(colors))
     for ball in lastOver:
         if("overs_actual" in ball):
             title = ball["overs_actual"]+" ( "+ball["players"]+" )"
