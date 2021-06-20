@@ -329,6 +329,8 @@ async def commentary(ctx, *args):
             if(("post_text" in ball) and ball["post_text"] != ""):
                 actualText = BeautifulSoup(ball["post_text"], "lxml").text
                 val += "> **"+actualText.replace('\n', ' ')+"**\n"
+            if(len(val) > 1018):
+                val = val[:1018]+"...**"
             embedVar.add_field(name=title, value=val, inline=False)
     await ctx.channel.send(embed=embedVar)
 
