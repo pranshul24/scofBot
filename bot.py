@@ -221,7 +221,7 @@ async def live_matches(ctx):
 
 
 @bot.command(name='score', help='Shows score for the match ')
-async def live_matches(ctx, *args):
+async def scorecard(ctx, *args):
     idx = 0
     if(len(args) == 1):
         idx = int(args[0])
@@ -281,6 +281,49 @@ async def live_matches(ctx, *args):
         bowlSc += " : "
         bowlSc += str(bowler["conceded"])+" runs, "+str(bowler["overs"])+" overs, "+str(bowler["wickets"])+" wickets\n"
     embedVar.add_field(name='Bowling Scorecard [N R O W]', value=bowlSc, inline=False)
+    await ctx.channel.send(embed=embedVar)
+
+
+@bot.command(name='com', help='Shows commentary (last over) for the match ')
+async def commentary(ctx, *args):
+    idx = 0
+    if(len(args) == 1):
+        idx = int(args[0])
+    response = ""
+    url = liveScoresUrl
+    html = urlopen(url, context=ctx).read()
+    soup = BeautifulSoup(html, "html.parser")
+    response = "No such match"
+    tags = soup('item')
+    i = 1
+    matchId = -1
+    for tag in tags:
+        if(i == idx):
+            lnk = tag.contents[7].contents[0]
+            lnk = lnk.split("/")
+            matchId = lnk[-1].split(".")[0]
+            break
+        i += 1
+    desc = ""
+    curMatch = ""
+    if(matchId != -1):
+        curMatch = Match(matchId)
+        response = curMatch.description
+    colors = [0xf8c300, 0xfd0061, 0xa652bb, 0x00ff00]
+    lastOver = curMatch.json['comms'][0]["ball"]
+    embedVar = discord.Embed(title=response, color=random.choice(colors))
+    for ball in lastOver:
+        if("overs_actual" in ball):
+            title = ball["overs_actual"]+" ( "+ball["players"]+" )"
+            val = "> **"+ball["event"]+"**\n"
+            if(ball["dismissal"] != ""):
+                val += "> Dismissal: "+ball["dismissal"]+"\n"
+            if(("pre_text" in ball) and ball["pre_text"] != ""):
+                val += "> **"+ball["pre_text"].split("\n")[1]+"**\n"
+            val += "> "+ball["text"]+"\n"
+            if(("post_text" in ball) and ball["post_text"] != ""):
+                val += "> **"+ball["post_text"].split("\n")[1]+"**\n"
+            embedVar.add_field(name=title, value=val, inline=False)
     await ctx.channel.send(embed=embedVar)
 
 bot.run(TOKEN)
