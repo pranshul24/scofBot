@@ -247,9 +247,23 @@ async def live_matches(ctx, *args):
         response = curMatch.description
     embedVar = discord.Embed(title=response, color=0x00ff00)
     embedVar.add_field(name='Result', value=curMatch.result, inline=False)
-    embedVar.add_field(name='Scheduled Overs', value=curMatch.scheduled_overs, inline=False)
     embedVar.add_field(name='Summary', value=curMatch.current_summary, inline=False)
-
+    batScoreCard = curMatch.latest_batting
+    batSc = ""
+    for batsmen in batScoreCard:
+        batSc += batsmen["known_as"]
+        if(batsmen["notout"] == 1):
+            batSc += "*"
+        batSc += "     "
+        batSc += str(batsmen["runs"])+"("+str(batsmen["balls_faced"])+")\n"
+    embedVar.add_field(name='Batting Scorecard [N R(B)]', value=batSc, inline=False)
+    bowlScoreCard = curMatch.latest_bowling
+    bowlSc = ""
+    for bowler in bowlScoreCard:
+        bowlSc += bowler["known_as"]
+        bowlSc += "     "
+        bowlSc += str(bowler["conceded"])+" runs    "+str(bowler["overs"])+" overs    "+str(bowler["wickets"])+" wickets\n"
+    embedVar.add_field(name='Bowling Scorecard [N R O W]', value=bowlSc, inline=False)
     await ctx.channel.send(embed=embedVar)
 
 bot.run(TOKEN)
