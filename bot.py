@@ -95,6 +95,10 @@ def match_func(ctx, matchNum, matchId, milestone, overs, lastWicket):
                     scorecard(ctx, matchNum)
                     commentary(ctx)
                     lastWicket = innings["wickets"]
+                if(curMatch.latest_innings["event"] != 0):
+                    scorecard(ctx, matchNum)
+                    commentary(ctx)
+                    return
                 cnt = 0
         else:
             return
