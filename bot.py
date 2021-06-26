@@ -38,7 +38,7 @@ alarms = []
 watchMatchOvers = {}
 watchMatchWickets = {}
 client = Client(account_sid, auth_token)
-cricket_channel_id = os.getenv('cricket_id')
+# cricket_channel_id = os.getenv('cricket_id')
 
 
 @bot.event
@@ -83,13 +83,13 @@ class Watch(commands.Cog):
         self.watchMatch.start(ctx, matchNum, matchId, milestone, overs)
 
     async def cog_unload(self):
-        message_channel = bot.get_channel(int(cricket_channel_id))
+        # message_channel = bot.get_channel(int(cricket_channel_id))
         await self.ctx.channel.send("Match has already ended")  # here can send any message to particular channel
         self.watchMatch.cancel()
 
     @tasks.loop(seconds=30)
     async def watchMatch(self, ctx, matchNum, matchId, milestone, overs):
-        message_channel = bot.get_channel(int(cricket_channel_id))
+        # message_channel = bot.get_channel(int(cricket_channel_id))
         curMatch = Match(matchId)
         innings = curMatch.latest_innings
         lastWicket = int(innings["wickets"])
