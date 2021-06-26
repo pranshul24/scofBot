@@ -35,12 +35,15 @@ twilio_contact = os.getenv('twilio_contact')
 to_contact2 = os.getenv('to_contact2')
 tem_contact = to_contact
 alarms = []
+watchMatchOvers = {}
+watchMatchWickets = {}
 client = Client(account_sid, auth_token)
+cricket_channel_id = os.getenv('cricket_id')
 
 
 @bot.event
 async def on_ready():
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="with Alarms"))
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="with Alarms & Cricket"))
 
 
 @bot.command(name='toss', help='gives random number in the range (default range = 2)')
@@ -74,34 +77,54 @@ def alarm_func(arg, cont):
     # print(call.sid)
 
 
-class MatchThread(threading.Thread):
-    def __init__(self,  *args, **kwargs):
-        super(MatchThread, self).__init__(*args, **kwargs)
-        self.is_running = 1
+class Watch(commands.Cog):
+    def __init__(self, ctx, matchNum, matchId, milestone, overs):
+        self.ctx = ctx
+        self.watchMatch.start(ctx, matchNum, matchId, milestone, overs)
 
+    async def cog_unload(self):
+        message_channel = bot.get_channel(int(cricket_channel_id))
+        await self.ctx.channel.send("Match has already ended")  # here can send any message to particular channel
+        self.watchMatch.cancel()
 
-def match_func(ctx, matchNum, matchId, milestone, overs, lastWicket):
-    t = threading.currentThread()
-    cnt = 0
-    while(1):
-        if(t.is_running == 1):
-            if(cnt < 60):
-                sleep(1)
-            else:
-                # check match
-                curMatch = Match(matchId)
-                innings = curMatch.innings
-                if(milestone == 'w' and (wickets in innings) and innings["wickets"] != lastWicket):
-                    scorecard(ctx, matchNum)
-                    commentary(ctx)
-                    lastWicket = innings["wickets"]
-                if(curMatch.latest_innings["event"] != 0):
-                    scorecard(ctx, matchNum)
-                    commentary(ctx)
-                    return
-                cnt = 0
-        else:
-            return
+    @tasks.loop(seconds=30)
+    async def watchMatch(self, ctx, matchNum, matchId, milestone, overs):
+        message_channel = bot.get_channel(int(cricket_channel_id))
+        curMatch = Match(matchId)
+        innings = curMatch.latest_innings
+        lastWicket = int(innings["wickets"])
+        lastOver = -1
+        if matchId in watchMatchOvers:
+            lastOver = watchMatchOvers[matchId]
+        if matchId in watchMatchWickets:
+            lastWicket = watchMatchWickets[matchId]
+        # print(lastOver)
+        if(milestone == 'w' and ("wickets" in innings) and innings["wickets"] != lastWicket):
+            await scorecard(ctx, matchNum, matchId)
+            await commentary(ctx, matchNum, 0, matchId)
+            lastWicket = int(innings["wickets"])
+            watchMatchWickets[matchId] = lastWicket
+
+        elif(milestone == 'o' and ("overs" in innings)):
+            # print(milestone == 'o')
+            curOver = int(innings["overs"].split(".")[0])
+            # print(curOver, " ", overs+lastOver)
+            if(curOver < lastOver):  # once 1 inning ends
+                curOver = lastOver
+            if(curOver == (lastOver+overs)):
+                await scorecard(ctx, matchNum, matchId)  # to make sure for index change
+                await commentary(ctx, matchNum, 0, matchId)
+                watchMatchOvers[matchId] = curOver
+
+        temp = curMatch.innings
+        innings = temp[len(temp)-1]
+        if(innings["event"] != 0):
+            await self.cog_unload()
+        # await message_channel.send("Your message") here can send any message to particular channel
+
+    @watchMatch.before_loop
+    async def before(self):
+        await bot.wait_until_ready()
 
 
 class AlarmThread(threading.Thread):
@@ -272,6 +295,8 @@ async def scorecard(ctx, *args):
         i += 1
     desc = ""
     curMatch = ""
+    if(len(args) == 2):
+        matchId = args[1]
     if(matchId != -1):
         curMatch = Match(matchId)
         response = curMatch.description
@@ -339,6 +364,8 @@ async def commentary(ctx, *args):
         i += 1
     desc = ""
     curMatch = ""
+    if(len(args) == 2):
+        matchId = args[1]
     if(matchId != -1):
         curMatch = Match(matchId)
         response = curMatch.description
@@ -358,7 +385,8 @@ async def commentary(ctx, *args):
                 actualText = BeautifulSoup(ball["pre_text"], "lxml").text
                 val += "> **"+actualText.replace('\n', ' ')+"**\n"
             if(ball["text"] != ""):
-                val += "> "+ball["text"]+"\n"
+                actualText = BeautifulSoup(ball["text"], "lxml").text
+                val += "> "+actualText.replace('\n', ' ')+"\n"
             if(("post_text" in ball) and ball["post_text"] != ""):
                 actualText = BeautifulSoup(ball["post_text"], "lxml").text
                 val += "> **"+actualText.replace('\n', ' ')+"**\n"
@@ -369,14 +397,16 @@ async def commentary(ctx, *args):
 
 
 @bot.command(name='wm', help='Watch a match')
-async def commentary(ctx, *args):
+async def watch(ctx, *args):
     idx = 0
-    overNum = 0
-
-    if(len(args) == 2):  # wickets
+    overNum = -1
+    milestone = 'w'  # default
+    if(len(args) >= 1):  # wickets  (wm matchnum w)
         idx = int(args[0])
     if(len(args) == 3):  # overs
-        overNum = int(args[1])
+        if(args[1] == 'o'):
+            overNum = int(args[2])
+            milestone = 'o'
     response = ""
     url = liveScoresUrl
     html = urlopen(url, context=ctx).read()
@@ -397,7 +427,22 @@ async def commentary(ctx, *args):
     if(matchId != -1):
         curMatch = Match(matchId)
         response = curMatch.description
-    colors = [0xf8c300, 0xfd0061, 0xa652bb, 0x00ff00]
+        desc = "Watching this match with milestone : **"+str(milestone)+"**"
+        if(overNum < 1):
+            milestone = 'w'
+        curMatch = Match(matchId)
+        innings = curMatch.latest_innings
+        lastWicket = int(innings["wickets"])
+        lastOver = int(innings["overs"].split(".")[0])
+        if(milestone == 'o'):
+            desc += " for every **"+str(overNum)+" overs**"
+            watchMatchOvers[matchId] = lastOver
+        else:
+            watchMatchWickets[matchId] = lastWicket
+        kk = Watch(ctx, idx, matchId, milestone, overNum)
 
+    colors = [0xf8c300, 0xfd0061, 0xa652bb, 0x00ff00]
+    embedVar = discord.Embed(title=response, description=desc, color=random.choice(colors))
+    await ctx.channel.send(embed=embedVar)
 
 bot.run(TOKEN)
