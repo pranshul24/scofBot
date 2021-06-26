@@ -345,7 +345,7 @@ async def commentary(ctx, *args):
     overNum = 0
     if(len(args) >= 1):
         idx = int(args[0])
-    if(len(args) == 2):
+    if(len(args) >= 2):
         overNum = int(args[1])
     response = ""
     url = liveScoresUrl
@@ -364,8 +364,8 @@ async def commentary(ctx, *args):
         i += 1
     desc = ""
     curMatch = ""
-    if(len(args) == 2):
-        matchId = args[1]
+    if(len(args) == 3):
+        matchId = args[2]
     if(matchId != -1):
         curMatch = Match(matchId)
         response = curMatch.description
