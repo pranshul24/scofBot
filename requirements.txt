@@ -1,7 +1,6 @@
 discord.py
 twilio
 python-dotenv
-urllib.request
 bs4
 requests
 python-espncricinfo

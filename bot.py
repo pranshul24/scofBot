@@ -11,7 +11,6 @@ from discord.ext import commands, tasks
 from dotenv import load_dotenv
 import requests
 import sys
-from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import ssl
 from espncricinfo.match import Match
