@@ -91,7 +91,10 @@ class Watch(commands.Cog):
         # message_channel = bot.get_channel(int(cricket_channel_id))
         await scorecard(self.ctx, self.matchNum, self.matchId)  # to make sure for index change
         await commentary(self.ctx, self.matchNum, 0, self.matchId)
-        await self.ctx.channel.send("Match has already ended")  # here can send any message to particular channel
+        curMatch = Match(self.matchId)
+        matchDesc = curMatch.description
+        embedVar = discord.Embed(title=matchDesc, description="Match has ended", color=0x3498DB)
+        await self.ctx.channel.send(embed=embedVar)
         self.watchMatch.cancel()
         for i in range(len(watchList)):
             if(id(watchList[i]) == id(self)):
@@ -477,7 +480,7 @@ async def watch_list(ctx, *args):
 
 
 @bot.command(name='stop', help='stop watching a match')
-async def watch_list(ctx, *args):
+async def stop_match(ctx, *args):
     colors = [0xf8c300, 0xfd0061, 0xa652bb, 0x00ff00]
     embedVar = discord.Embed(title="Watch List", description="", color=random.choice(colors))
     idx = -1
