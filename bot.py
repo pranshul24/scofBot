@@ -35,6 +35,7 @@ twilio_contact = os.getenv('twilio_contact')
 to_contact2 = os.getenv('to_contact2')
 tem_contact = to_contact
 alarms = []
+watchList = []
 watchMatchOvers = {}
 watchMatchWickets = {}
 client = Client(account_sid, auth_token)
@@ -80,10 +81,15 @@ def alarm_func(arg, cont):
 class Watch(commands.Cog):
     def __init__(self, ctx, matchNum, matchId, milestone, overs):
         self.ctx = ctx
+        self.matchId = matchId
+        self.milestone = milestone
+        self.overs = overs
         self.watchMatch.start(ctx, matchNum, matchId, milestone, overs)
 
     async def cog_unload(self):
         # message_channel = bot.get_channel(int(cricket_channel_id))
+        await scorecard(ctx, matchNum, matchId)  # to make sure for index change
+        await commentary(ctx, matchNum, 0, matchId)
         await self.ctx.channel.send("Match has already ended")  # here can send any message to particular channel
         self.watchMatch.cancel()
 
@@ -110,7 +116,8 @@ class Watch(commands.Cog):
             curOver = int(innings["overs"].split(".")[0])
             # print(curOver, " ", overs+lastOver)
             if(curOver < lastOver):  # once 1 inning ends
-                curOver = lastOver
+                lastOver = curOver
+                watchMatchOvers[matchId] = lastOver
             if(curOver == (lastOver+overs)):
                 await scorecard(ctx, matchNum, matchId)  # to make sure for index change
                 await commentary(ctx, matchNum, 0, matchId)
@@ -430,7 +437,6 @@ async def watch(ctx, *args):
         desc = "Watching this match with milestone : **"+str(milestone)+"**"
         if(overNum < 1):
             milestone = 'w'
-        curMatch = Match(matchId)
         innings = curMatch.latest_innings
         lastWicket = int(innings["wickets"])
         lastOver = int(innings["overs"].split(".")[0])
@@ -440,9 +446,29 @@ async def watch(ctx, *args):
         else:
             watchMatchWickets[matchId] = lastWicket
         kk = Watch(ctx, idx, matchId, milestone, overNum)
+        watchList.append(kk)
 
     colors = [0xf8c300, 0xfd0061, 0xa652bb, 0x00ff00]
     embedVar = discord.Embed(title=response, description=desc, color=random.choice(colors))
+    await scorecard(ctx, idx, matchId)  # to make sure for index change
+    await commentary(ctx, idx, 0, matchId)
     await ctx.channel.send(embed=embedVar)
+
+
+@bot.command(name='wlist', help='List of all matches being watched')
+async def watch_list(ctx, *args):
+    colors = [0xf8c300, 0xfd0061, 0xa652bb, 0x00ff00]
+    embedVar = discord.Embed(title="Watch List", description="", color=random.choice(colors))
+    for match in watchList:
+        curMatch = Match(match.matchId)
+        response = curMatch.description
+        milestone = match.milestone
+        overNum = match.overs
+        desc = "Watching this match with milestone : **"+str(milestone)+"**"
+        if(milestone == 'o'):
+            desc += " for every **"+str(overNum)+" overs**"
+        embedVar.add_field(name=response, value=desc, inline=False)
+    await ctx.channel.send(embed=embedVar)
+
 
 bot.run(TOKEN)
