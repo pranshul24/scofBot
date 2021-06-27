@@ -89,8 +89,8 @@ class Watch(commands.Cog):
 
     async def cog_unload(self):
         # message_channel = bot.get_channel(int(cricket_channel_id))
-        await scorecard(ctx, matchNum, matchId)  # to make sure for index change
-        await commentary(ctx, matchNum, 0, matchId)
+        await scorecard(self.ctx, self.matchNum, self.matchId)  # to make sure for index change
+        await commentary(self.ctx, self.matchNum, 0, self.matchId)
         await self.ctx.channel.send("Match has already ended")  # here can send any message to particular channel
         self.watchMatch.cancel()
         for i in range(len(watchList)):
@@ -464,6 +464,33 @@ async def watch(ctx, *args):
 async def watch_list(ctx, *args):
     colors = [0xf8c300, 0xfd0061, 0xa652bb, 0x00ff00]
     embedVar = discord.Embed(title="Watch List", description="", color=random.choice(colors))
+    for match in watchList:
+        curMatch = Match(match.matchId)
+        response = curMatch.description
+        milestone = match.milestone
+        overNum = match.overs
+        desc = "Watching this match with milestone : **"+str(milestone)+"**"
+        if(milestone == 'o'):
+            desc += " for every **"+str(overNum)+" overs**"
+        embedVar.add_field(name=response, value=desc, inline=False)
+    await ctx.channel.send(embed=embedVar)
+
+
+@bot.command(name='stop', help='stop watching a match')
+async def watch_list(ctx, *args):
+    colors = [0xf8c300, 0xfd0061, 0xa652bb, 0x00ff00]
+    embedVar = discord.Embed(title="Watch List", description="", color=random.choice(colors))
+    idx = -1
+    if(len(args) == 1):
+        idx = int(args[0])
+    temp = watchList
+    lenL = len(watchList)
+    if(idx == -1):
+        for i in range(lenL):
+            temp[i].cog_unload()
+    elif(idx <= lenL):
+        temp[idx].cog_unload()
+
     for match in watchList:
         curMatch = Match(match.matchId)
         response = curMatch.description
