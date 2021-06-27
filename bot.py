@@ -84,6 +84,7 @@ class Watch(commands.Cog):
         self.matchId = matchId
         self.milestone = milestone
         self.overs = overs
+        self.matchNum = matchNum
         self.watchMatch.start(ctx, matchNum, matchId, milestone, overs)
 
     async def cog_unload(self):
@@ -92,6 +93,10 @@ class Watch(commands.Cog):
         await commentary(ctx, matchNum, 0, matchId)
         await self.ctx.channel.send("Match has already ended")  # here can send any message to particular channel
         self.watchMatch.cancel()
+        for i in range(len(watchList)):
+            if(id(watchList[i]) == id(self)):
+                del watchList[i]
+                break
 
     @tasks.loop(seconds=30)
     async def watchMatch(self, ctx, matchNum, matchId, milestone, overs):
