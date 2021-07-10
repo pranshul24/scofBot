@@ -490,9 +490,9 @@ async def stop_match(ctx, *args):
     lenL = len(watchList)
     if(idx == -1):
         for i in range(lenL):
-            temp[i].cog_unload()
+            await temp[i].cog_unload()
     elif(idx <= lenL):
-        temp[idx].cog_unload()
+        await temp[idx-1].cog_unload()
 
     for match in watchList:
         curMatch = Match(match.matchId)
